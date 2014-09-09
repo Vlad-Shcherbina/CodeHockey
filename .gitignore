@@ -5,6 +5,7 @@ python3-cgdk/
 local-runner/
 
 strategy/sol.zip
+replay_data/
 
 
 # Byte-compiled / optimized / DLL files
