@@ -1,0 +1,33 @@
+<head>
+<style>
+.selected {
+  font-weight: bold;
+}
+td {
+  vertical-align: top;
+}
+</style>
+</head>
+
+<script>
+var frames = {{ frames | safe }};
+var selected = '';
+</script>
+
+<table>
+<tr>
+<td style="width:150px">
+  {% for frame in frames %}
+  <li id="frame{{ frame }}" onclick="selectFrame('{{frame}}')">{{ frame }}</li>
+  {% endfor %}
+  </td>
+<td>
+
+<td>
+  <img id="pic" src="hz" width=512 height=384>
+</td>
+</tr>
+</table>
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script src="/static/browse.js"></script>
