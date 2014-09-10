@@ -1,3 +1,6 @@
+import sys
+sys.path.append('../strategy')
+
 import glob
 import os
 import re

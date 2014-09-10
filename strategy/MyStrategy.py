@@ -1,10 +1,13 @@
 from math import *
+import logging
 
 from model.ActionType import ActionType
 from model.Game import Game
 from model.Move import Move
 from model.Hockeyist import Hockeyist
 from model.World import World
+
+from utils import *
 
 try:
     import recorder
@@ -23,6 +26,13 @@ class MyStrategy:
             if recorder:
                 recorder.tick(world.tick, world, game)
 
-        move.speed_up = -1.0
-        move.turn = pi
+            logging.info(repr(world.tick))
+
+
+        if world.tick % 70 < 35:
+            move.speed_up = -1.0
+        else:
+            move.turn = pi
+
+
         move.action = ActionType.STRIKE

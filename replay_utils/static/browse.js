@@ -2,6 +2,17 @@ function selectFrame(frame) {
     console.log(frame);
     var img_path =
         '/replay_data/hz' + frame + '.png?no_cache=' + Math.random();
+    var log_path =
+        '/replay_data/log' + frame + '.txt?no_cache=' + Math.random();
+
+    $.ajax({
+        url: log_path,
+    }).done(function (data) {
+        $('#log').text(data);
+    }).fail(function () {
+        $('#log').text('error loading logs');
+    });
+
     $('#pic').attr('src', img_path);
 
     $('#frame' + selected).removeClass('selected');

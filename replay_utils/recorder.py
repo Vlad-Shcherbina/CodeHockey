@@ -1,9 +1,11 @@
 from math import pi
-import cmath
 import shutil
 import os
+import logging
 
 from PIL import Image, ImageDraw
+
+from utils import *
 
 
 REPLAY_DIR = '../replay_data'
@@ -45,14 +47,29 @@ class ScaledDraw(object):
             **options)
 
 
+handler = None
+
+
 def tick(frame_number, world, game):
+    global handler
     if frame_number == 0:
         shutil.rmtree(REPLAY_DIR, ignore_errors=True)
         if not os.path.exists(REPLAY_DIR):
             os.makedirs(REPLAY_DIR)
 
-    if frame_number % 500 and (frame_number > 200 or frame_number % 3):
+    if frame_number % 500 and (frame_number > 200 or frame_number % 4):
         return
+
+    if handler is not None:
+        logging.getLogger().removeHandler(handler)
+    if frame_number == 0:
+        logging.getLogger().setLevel(logging.INFO)
+    handler = logging.FileHandler(
+        os.path.join(REPLAY_DIR, 'log{:04}.txt'.format(frame_number)))
+    handler.setFormatter(
+        logging.Formatter("%(levelname)s:%(name)s: %(message)s"))
+    logging.getLogger().addHandler(handler)
+
     print(frame_number)
 
     scale = 0.5
@@ -64,25 +81,22 @@ def tick(frame_number, world, game):
     sd = ScaledDraw(draw, scale)
 
     for h in world.hockeyists:
-        color = color_by_id[h.player_id]
-        pos = complex(h.x, h.y)
-        dir = cmath.rect(1, h.angle)
-        sd.circle(pos, h.radius, outline=color, fill=color + (64,))
-
-        if h.type == 0: # goalie
+        h = CUnit(h)
+        color = color_by_id[h.unit.player_id]
+        sd.circle(h.pos, h.radius, outline=color, fill=color + (64,))
+        if h.unit.type == 0: # goalie
             continue
-
-        sd.line(pos, pos + dir * h.radius, fill=color)
+        sd.line(h.pos, h.pos + h.dir * h.radius, fill=color)
         sd.pieslice(
-            pos, game.stick_length,
+            h.pos, game.stick_length,
             h.angle - game.stick_sector * 0.5,
             h.angle + game.stick_sector * 0.5,
             outline=color + (64,),
             fill=color + (32,))
 
-    pos = complex(world.puck.x, world.puck.y)
+    puck = CUnit(world.puck)
     sd.circle(
-        pos, world.puck.radius,
+        puck.pos, puck.radius,
         outline=(255, 255, 255), fill=(255, 255, 255, 64))
 
     img.save(os.path.join(REPLAY_DIR, 'hz{:04}.png'.format(frame_number)))
