@@ -1,3 +1,4 @@
+from math import pi
 import cmath
 
 
@@ -17,3 +18,16 @@ class CUnit(object):
         self.mass = unit.mass
 
         self.unit = unit
+
+    def inside_sector(self, pos):
+        d = (pos - self.pos) / self.dir
+        if abs(d) > game.stick_length:
+            return False
+        return abs(cmath.phase(d)) < game.stick_sector * 0.5
+
+
+game = None
+
+def register_game(game_):
+    global game
+    game = game_
