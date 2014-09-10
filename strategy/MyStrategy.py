@@ -24,9 +24,10 @@ def move_to_target_controls(u, target):
         speed_up = 1.0
     else:
         speed_up = 0
-    if d.imag > 0:
+    turn = 0
+    if d.imag > 1:
         turn = 10
-    else:
+    if d.imag < -1:
         turn = -10
     return speed_up, turn
 
@@ -42,6 +43,7 @@ class MyStrategy:
             if world.tick == 0:
                 register_game(game)
                 logging.info(game.stick_sector)
+                logging.info('player_id={}'.format(me.player_id))
             logging.info(repr(world.tick))
 
         me = CUnit(me)
@@ -52,5 +54,21 @@ class MyStrategy:
         move.action = ActionType.TAKE_PUCK
 
         if me.inside_sector(puck.pos):
-            logging.info('strike')
-            move.action = ActionType.STRIKE
+            d = puck.pos - me.pos
+            corners = goal_net_corners(me.unit.player_id)
+            ds = [(c - puck.pos) / d for c in corners]
+            if ds[0].imag < 0 and ds[1].imag > 0:
+                if me.unit.remaining_cooldown_ticks == 0:
+                    logging.info('strike!')
+                    move.action = ActionType.STRIKE
+                else:
+                    logging.info('waiting to strike')
+                    move.action = ActionType.STRIKE
+            else:
+                if puck.unit.owner_hockeyist_id == me.unit.id:
+                    if ds[1].imag > 0:
+                        logging.info('aiming right')
+                        move.turn = 10
+                    elif ds[1].imag < 0:
+                        logging.info('aiming left')
+                        move.turn = -10
