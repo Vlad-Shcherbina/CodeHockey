@@ -80,6 +80,22 @@ def tick(frame_number, world, game):
     draw = ImageDraw.Draw(img, 'RGBA')
     sd = ScaledDraw(draw, scale)
 
+    ps = [
+        complex(game.goal_net_width, 0),
+        complex(game.goal_net_width, game.goal_net_top),
+        complex(game.goal_net_width, game.goal_net_top),
+        complex(0, game.goal_net_top),
+        complex(0, game.goal_net_top + game.goal_net_height),
+        complex(game.goal_net_width, game.goal_net_top + game.goal_net_height),
+        complex(game.goal_net_width, game.world_height)]
+    border_color = (200, 200, 200)
+    for p1, p2 in zip(ps, ps[1:]):
+        sd.line(p1, p2, fill=border_color)
+        sd.line(
+            game.world_width - p1.conjugate(),
+            game.world_width - p2.conjugate(),
+            fill=border_color)
+
     for h in world.hockeyists:
         h = CUnit(h)
         color = color_by_id[h.unit.player_id]
