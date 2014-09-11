@@ -1,10 +1,17 @@
 from math import pi
 import cmath
 import copy
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 def complex_to_pair(z):
     return z.real, z.imag
+
+def dot(z1, z2):
+    return z1.real * z2.real + z1.imag * z2.imag
 
 
 class CUnit(object):
@@ -46,6 +53,9 @@ class CWorld(object):
             else:
                 self.hockeyists[h.unit.player_id].append(h)
 
+        self.players = sorted(world.players, key=lambda p: not p.me)
+        self.score = ':'.join(str(p.goal_count) for p in self.players)
+
 
 def goal_net_corners(player_id):
     if player_id == 1:
@@ -73,6 +83,70 @@ def predict_goalie(gy, puck_pos):
     return gy
 
 
+def trace_puck(pos, v, gy=None):
+    """ Return pair (outcome, list of coords). """
+    if gy is None:
+        gy = pos.imag
+
+    outcome = 0
+    trace = []
+
+    def check_hit(pos, v, gy):
+        if pos.real > game.goal_net_width + game.puck_radius + game.hockeyist_radius * 2:
+            return 0
+
+        goalie_pos = complex(game.goal_net_width + game.hockeyist_radius, gy)
+        if abs(goalie_pos - pos) < game.hockeyist_radius + game.puck_radius:
+            logging.info('goalie bounce %s', goalie_pos)
+            return 1  # bounde
+
+        if pos.real > game.goal_net_width + game.puck_radius:
+            return 0
+
+        if pos.real < game.goal_net_width:
+            return 2  # goal
+
+        if (pos.imag < game.goal_net_top or
+            pos.imag > game.goal_net_top + game.goal_net_height):
+            return 1  # bounce
+
+        for c in goal_net_corners(1):
+            n = pos - c
+            if 1e-3 < abs(n) < game.puck_radius:
+                n /= abs(n)
+                v -= 2 * dot(n, v) * n
+                if v.real < 0:
+                    return 2  # goal
+                else:
+                    # TODO: coverage
+                    return 1  # bounce
+
+        return 0
+
+    for i in range(100):
+        pos += v
+        v *= 0.999  # TODO: measure carefully
+        trace.append(pos)
+        h = check_hit(pos, v, gy)
+        if h == 1:
+            outcome = 0
+            break
+        elif h == 2:
+            outcome = 1
+            break
+        h = check_hit(game.world_width - pos.conjugate(), -v.conjugate(), gy)
+        if h == 1:
+            outcome = 0
+            break
+        elif h == 2:
+            outcome = 2
+            break
+
+        gy = predict_goalie(gy, pos)
+
+    return outcome, trace
+
+
 game = None
 
 def register_game(game_, world):
@@ -80,7 +154,10 @@ def register_game(game_, world):
     game = copy.deepcopy(game_)
     game.hockeyist_radius = world.hockeyists[0].radius
     game.puck_radius = world.puck.radius
-    #game.radius
+
+    # TODO: wtf
+    assert not hasattr(game, 'pass_power')
+    game.pass_power = 15 * game.pass_power_factor
 
 def get_game():
     return game
