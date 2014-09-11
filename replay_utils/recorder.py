@@ -19,7 +19,9 @@ def shade(color, a):
 
 
 class ScaledDraw(object):
-    def __init__(self, draw, scale=1.0):
+    def __init__(self, img, img_path, draw, scale=1.0):
+        self.img = img
+        self.img_path = img_path
         self.draw = draw
         self.scale = scale
 
@@ -48,17 +50,19 @@ class ScaledDraw(object):
 
 
 handler = None
+log_draw = None
 
 
 def tick(frame_number, world, game):
-    global handler
+    global handler, log_draw
     if frame_number == 0:
         shutil.rmtree(REPLAY_DIR, ignore_errors=True)
         if not os.path.exists(REPLAY_DIR):
             os.makedirs(REPLAY_DIR)
 
-    if frame_number % 500 and (frame_number > 200 or frame_number % 4):
-        return
+    if frame_number % 20 and (frame_number > 100 or frame_number % 10):
+        assert log_draw
+        return log_draw
 
     if handler is not None:
         logging.getLogger().removeHandler(handler)
@@ -72,13 +76,17 @@ def tick(frame_number, world, game):
 
     print(frame_number)
 
+    if log_draw is not None:
+        log_draw.img.save(log_draw.img_path)
+
     scale = 0.5
     img = Image.new(
         'RGB',
         (int(world.width * scale), int(world.height * scale)),
         'black')
+    img_path = os.path.join(REPLAY_DIR, 'hz{:04}.png'.format(frame_number))
     draw = ImageDraw.Draw(img, 'RGBA')
-    sd = ScaledDraw(draw, scale)
+    log_draw = ScaledDraw(img, img_path, draw, scale)
 
     ps = [
         complex(game.goal_net_width, 0),
@@ -90,29 +98,27 @@ def tick(frame_number, world, game):
         complex(game.goal_net_width, game.world_height)]
     border_color = (200, 200, 200)
     for p1, p2 in zip(ps, ps[1:]):
-        sd.line(p1, p2, fill=border_color)
-        sd.line(
+        log_draw.line(p1, p2, fill=border_color)
+        log_draw.line(
             game.world_width - p1.conjugate(),
             game.world_width - p2.conjugate(),
             fill=border_color)
 
-    for h in world.hockeyists:
-        h = CUnit(h)
+    for h in world.all_hockeyists:
         color = color_by_id[h.unit.player_id]
-        sd.circle(h.pos, h.radius, outline=color, fill=color + (64,))
+        log_draw.circle(h.pos, h.radius, outline=color, fill=color + (64,))
         if h.unit.type == 0: # goalie
             continue
-        sd.line(h.pos, h.pos + h.dir * h.radius, fill=color)
-        sd.pieslice(
+        log_draw.line(h.pos, h.pos + h.dir * h.radius, fill=color)
+        log_draw.pieslice(
             h.pos, game.stick_length,
             h.angle - game.stick_sector * 0.5,
             h.angle + game.stick_sector * 0.5,
             outline=color + (64,),
             fill=color + (32,))
 
-    puck = CUnit(world.puck)
-    sd.circle(
-        puck.pos, puck.radius,
+    log_draw.circle(
+        world.puck.pos, world.puck.radius,
         outline=(255, 255, 255), fill=(255, 255, 255, 64))
 
-    img.save(os.path.join(REPLAY_DIR, 'hz{:04}.png'.format(frame_number)))
+    return log_draw
