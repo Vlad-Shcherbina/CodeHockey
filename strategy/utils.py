@@ -97,7 +97,6 @@ def trace_puck(pos, v, gy=None):
 
         goalie_pos = complex(game.goal_net_width + game.hockeyist_radius, gy)
         if abs(goalie_pos - pos) < game.hockeyist_radius + game.puck_radius:
-            logging.info('goalie bounce %s', goalie_pos)
             return 1  # bounde
 
         if pos.real > game.goal_net_width + game.puck_radius:
@@ -115,7 +114,7 @@ def trace_puck(pos, v, gy=None):
             if 1e-3 < abs(n) < game.puck_radius:
                 n /= abs(n)
                 v -= 2 * dot(n, v) * n
-                if v.real < 0:
+                if v.real < 0 or True:  # TODO
                     return 2  # goal
                 else:
                     # TODO: coverage
@@ -157,7 +156,9 @@ def register_game(game_, world):
 
     # TODO: wtf
     assert not hasattr(game, 'pass_power')
-    game.pass_power = 15 * game.pass_power_factor
+    game.pass_power = 20 * game.pass_power_factor
+    assert not hasattr(game, 'base_strike_power')
+    game.base_strike_power = 20 * game.strike_power_base_factor
 
 def get_game():
     return game

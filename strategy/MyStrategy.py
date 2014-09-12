@@ -107,10 +107,17 @@ def every_tick(world):
             ds = [(c - puck.pos) / d for c in corners]
             if ds[0].imag < 0 and ds[1].imag > 0:
                 if me.unit.remaining_cooldown_ticks == 0:
-                    logging.info('strike!')
-                    move.action = ActionType.STRIKE
+                    strike_v = get_game().base_strike_power + dot(me.dir, me.v)
+                    strike_v *= me.dir
+                    outcome, trace = trace_puck(puck.pos, strike_v)
                     if log_draw:
-                        draw_trace(*trace_puck(puck.pos, 15 * me.dir))
+                        draw_trace(outcome, trace)
+                    if outcome == me.unit.player_id or random.randrange(5) == 0 or world.tick > 5995:
+                        logging.info('strike!')
+                        move.action = ActionType.STRIKE
+                    else:
+                        logging.info('aiming')
+                        move.turn = 10 - 20 * (world.tick // 6 % 2)
                 else:
                     logging.info('waiting to strike')
             else:
