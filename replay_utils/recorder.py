@@ -3,7 +3,7 @@ import shutil
 import os
 import logging
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
 from utils import *
 import log_context
@@ -49,13 +49,19 @@ class ScaledDraw(object):
             int(angle1 * 180 / pi), int(angle2 * 180 / pi),
             **options)
 
+    def text(self, pos, text, **options):
+        x = pos.real * self.scale
+        y = pos.imag * self.scale
+        self.draw.text((x, y), text, font=font, **options)
+
 
 handler = None
 log_draw = None
 
+font = None
 
 def tick(frame_number, world, game):
-    global handler, log_draw
+    global handler, log_draw, font
     if frame_number == 0:
         shutil.rmtree(REPLAY_DIR, ignore_errors=True)
         if not os.path.exists(REPLAY_DIR):
@@ -81,6 +87,10 @@ def tick(frame_number, world, game):
     if log_draw is not None:
         log_draw.img.save(log_draw.img_path)
 
+    if font is None:
+        font = ImageFont.load_default()
+        assert font is not None
+
     scale = 0.5
     img = Image.new(
         'RGB',
@@ -90,14 +100,19 @@ def tick(frame_number, world, game):
     draw = ImageDraw.Draw(img, 'RGBA')
     log_draw = ScaledDraw(img, img_path, draw, scale)
 
+    log_draw.text(0, world.score, fill='white')
+
     ps = [
-        complex(game.goal_net_width, 0),
+        complex(game.world_width * 0.5, game.rink_top),
+        complex(game.goal_net_width, game.rink_top),
         complex(game.goal_net_width, game.goal_net_top),
         complex(game.goal_net_width, game.goal_net_top),
         complex(0, game.goal_net_top),
         complex(0, game.goal_net_top + game.goal_net_height),
         complex(game.goal_net_width, game.goal_net_top + game.goal_net_height),
-        complex(game.goal_net_width, game.world_height)]
+        complex(game.goal_net_width, game.rink_bottom),
+        complex(game.world_width * 0.5, game.rink_bottom),
+        ]
     border_color = (200, 200, 200)
     for p1, p2 in zip(ps, ps[1:]):
         log_draw.line(p1, p2, fill=border_color)

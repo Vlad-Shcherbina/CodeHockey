@@ -44,10 +44,13 @@ def draw_trace(outcome, trace):
 
 def draw_hit_locations():
     logging.info('pass power %s', get_game().pass_power)
-    x0 = int(get_game().goal_net_width + get_game().puck_radius + 2)
+    x0 = int(get_game().rink_left + get_game().puck_radius + 2)
+    x1 = int(get_game().rink_right - get_game().puck_radius - 2)
+    y0 = int(get_game().rink_top + get_game().puck_radius + 2)
+    y1 = int(get_game().rink_bottom - get_game().puck_radius - 2)
     hz = True
-    for x in range(x0, int(get_game().world_width) - x0, 50):
-        for y in range(0, int(get_game().world_height), 50):
+    for x in range(x0, x1, 50):
+        for y in range(y0, y1, 50):
             for a in range(0, 180, 3):
                 dir = cmath.rect(1, (a / 180 + 0.5) * pi)
                 pos = complex(x, y)
@@ -58,7 +61,7 @@ def draw_hit_locations():
                     if hz:
                         draw_trace(*trace_puck(pos, v))
                         hz = False
-                    log_draw.line(pos, pos + 20 * dir, fill=(255, 255, 255, 200))
+                    log_draw.line(pos, pos + 50 * dir, fill=(255, 255, 255, 100))
 
 
 class MoveInstruction:
@@ -129,6 +132,7 @@ def every_tick(world):
                         move.turn = -10
         moves[me.unit.id] = move
 
+    move.speed_up, move.turn = move_to_target_controls(me, 0)
     return moves
 
 
