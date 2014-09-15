@@ -6,6 +6,7 @@ import logging
 from PIL import Image, ImageDraw
 
 from utils import *
+import log_context
 
 
 REPLAY_DIR = '../replay_data'
@@ -71,7 +72,8 @@ def tick(frame_number, world, game):
     handler = logging.FileHandler(
         os.path.join(REPLAY_DIR, 'log{:04}.txt'.format(frame_number)))
     handler.setFormatter(
-        logging.Formatter("%(levelname)s:%(name)s: %(message)s"))
+        logging.Formatter('%(levelname)8s:%(name)11s: %(message)s'))
+    handler = log_context.HandlerDecorator(handler)
     logging.getLogger().addHandler(handler)
 
     print(frame_number)

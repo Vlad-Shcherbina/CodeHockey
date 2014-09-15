@@ -10,6 +10,7 @@ from model.Hockeyist import Hockeyist
 from model.World import World
 
 from utils import *
+from log_context import log_context
 
 try:
     import recorder
@@ -65,8 +66,6 @@ class MoveInstruction:
 
 
 def every_tick(world):
-    logging.info(repr(world.tick))
-
     puck = world.puck
     if world.tick % 20 == 0:
         logging.info('score %s', world.score)
@@ -143,13 +142,21 @@ class MyStrategy:
             cworld = CWorld(world)
             cworld.player_id = me.player_id
             random.seed(42)
-            if cworld.tick == 0:
-                register_game(game, world)
-
             if recorder:
                 log_draw = recorder.tick(cworld.tick, cworld, game)
 
-            moves = every_tick(cworld)
+            if cworld.tick == 0:
+                register_game(game, world)
+                with log_context('game constants'):
+                    for k, v in sorted(game.__dict__.items()):
+                        logging.info('{}: {}'.format(k, v))
+                with log_context('player details'):
+                    logging.info('my player_id: {}'.format(me.player_id))
+                    logging.info('my hockeyists: {}'.format(
+                        [p.unit.id for p in cworld.hockeyists[me.player_id]]))
+
+            with log_context('tick {}'.format(cworld.tick)):
+                moves = every_tick(cworld)
             prev_world = copy.deepcopy(cworld)
 
         if moves is not None and me.id in moves:
